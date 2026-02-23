@@ -1,0 +1,15 @@
+services:
+  db:
+    image: postgres:16
+    container_name: salon_db
+    environment:
+      POSTGRES_USER: salon
+      POSTGRES_PASSWORD: salonpass
+      POSTGRES_DB: salon_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - salon_pgdata:/var/lib/postgresql/data
+
+volumes:
+  salon_pgdata:
