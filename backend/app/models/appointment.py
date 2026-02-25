@@ -13,5 +13,7 @@ class Appointment(Base):
     service_id: Mapped[int] = mapped_column(ForeignKey("services.id"))
     service = relationship("Service")
 
-    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=False))
+    start_time: Mapped[datetime] = mapped_column(DateTime(timezone=False), index=True)
+    end_time: Mapped[datetime] = mapped_column(DateTime(timezone=False), index=True)
+
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)

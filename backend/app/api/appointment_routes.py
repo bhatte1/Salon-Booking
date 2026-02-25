@@ -51,7 +51,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
         .filter(
             Appointment.service_id == payload.service_id,
             Appointment.start_time < end_utc,
-            Appointment.start_time >= window_start,
+            Appointment.end_time > start_utc,
         )
         .first()
     )
@@ -65,6 +65,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
         customer_email=str(payload.customer_email),
         service_id=payload.service_id,
         start_time=start_utc,
+        end_time=end_utc,  # 👈 THIS LINE IS THE IMPORTANT ONE
         notes=payload.notes,
     )
 
