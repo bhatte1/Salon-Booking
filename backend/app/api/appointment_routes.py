@@ -8,6 +8,10 @@ from app.models.appointment import Appointment
 from app.models.service import Service
 from app.schemas.appointment import AppointmentCreate, AppointmentOut
 
+from app.api.deps import get_current_user
+from app.models.user import User
+from app.schemas.appointment import AppointmentCreateAuthenticated
+
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
@@ -30,7 +34,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail="Service not found")
 
     # 2) Reject bookings in the past
-    now_utc = datetime.utcnow()
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
     if start_utc < now_utc:
         raise HTTPException(status_code=400, detail="Cannot book in the past")
 
@@ -73,3 +77,94 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
     db.commit()
     db.refresh(appt)
     return appt
+
+
+@router.post("/me", response_model=AppointmentOut)
+def create_my_appointment(
+    payload: AppointmentCreateAuthenticated,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # 0) Normalize time to UTC naive (same as your existing logic)
+    start_utc = payload.start_time
+    if start_utc.tzinfo is not None:
+        start_utc = start_utc.astimezone(timezone.utc).replace(tzinfo=None)
+
+    # 1) Ensure service exists
+    svc = db.query(Service).filter(Service.id == payload.service_id).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    # 2) Reject bookings in the past
+    now_utc = datetime.now(timezone.utc).replace(tzinfo=None)
+    if start_utc < now_utc:
+        raise HTTPException(status_code=400, detail="Cannot book in the past")
+
+    # 3) Advisory lock to reduce race conditions
+    minute_bucket = int(start_utc.timestamp() // 60)
+    db.execute(
+        text("SELECT pg_advisory_xact_lock(:k1, :k2)"),
+        {"k1": int(payload.service_id), "k2": minute_bucket},
+    )
+
+    # 4) Compute end time
+    end_utc = start_utc + timedelta(minutes=svc.duration_minutes)
+
+    # 5) Canonical overlap check
+    conflict = (
+        db.query(Appointment)
+        .filter(
+            Appointment.service_id == payload.service_id,
+            Appointment.start_time < end_utc,
+            Appointment.end_time > start_utc,
+        )
+        .first()
+    )
+
+    if conflict:
+        raise HTTPException(status_code=409, detail="Time slot already booked")
+
+    # 6) Create appointment linked to current user
+    appt = Appointment(
+        user_id=current_user.id,
+        customer_name=current_user.full_name,
+        customer_email=current_user.email,
+        service_id=payload.service_id,
+        start_time=start_utc,
+        end_time=end_utc,
+        notes=payload.notes,
+    )
+
+    db.add(appt)
+    db.commit()
+    db.refresh(appt)
+    return appt
+
+@router.get("/me/list", response_model=list[AppointmentOut])
+def list_my_appointments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    return (
+        db.query(Appointment)
+        .filter(Appointment.user_id == current_user.id)
+        .order_by(Appointment.start_time.desc())
+        .all()
+    )
+
+
+@router.get("/owner/all", response_model=list[AppointmentOut])
+def list_all_appointments_for_owner(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Only owners can view all appointments")
+
+    return (
+        db.query(Appointment)
+        .order_by(Appointment.start_time.desc())
+        .all()
+    )
+
+    

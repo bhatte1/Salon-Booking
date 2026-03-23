@@ -18,3 +18,9 @@ class AppointmentOut(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class AppointmentCreateAuthenticated(BaseModel):
+    service_id: int
+    start_time: datetime
+    notes: str | None = None
