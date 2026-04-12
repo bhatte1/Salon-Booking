@@ -4,8 +4,22 @@ from sqlalchemy import or_
 
 from app.db.session import get_db
 from app.models.user import User
-from app.schemas.user import UserCreate, UserLogin, UserOut, TokenOut
-from app.core.security import hash_password, verify_password, create_access_token
+from app.schemas.user import (
+    UserCreate,
+    UserLogin,
+    UserOut,
+    TokenOut,
+    ForgotPasswordRequest,
+    ResetPasswordRequest,
+)
+from app.core.security import (
+    hash_password,
+    verify_password,
+    create_access_token,
+    generate_reset_token,
+    get_reset_token_expiry,
+)
+from datetime import datetime, timezone
 from app.api.deps import get_current_user
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -94,3 +108,55 @@ def owner_login(payload: UserLogin, db: Session = Depends(get_db)):
 @router.get("/me", response_model=UserOut)
 def read_current_user(current_user: User = Depends(get_current_user)):
     return current_user
+
+
+@router.post("/forgot-password")
+def forgot_password(payload: ForgotPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.email == payload.email).first()
+
+    # For security, don't reveal whether the email exists.
+    if not user:
+        return {
+            "message": "If an account with that email exists, a reset link has been generated."
+        }
+
+    token = generate_reset_token()
+    expires_at = get_reset_token_expiry()
+
+    user.reset_token = token
+    user.reset_token_expires_at = expires_at
+    db.commit()
+
+    reset_link = f"http://localhost:5173/reset-password?token={token}"
+
+    return {
+        "message": "If an account with that email exists, a reset link has been generated.",
+        "reset_link": reset_link
+    }
+
+
+@router.post("/reset-password")
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)):
+    user = db.query(User).filter(User.reset_token == payload.token).first()
+
+    if not user:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    if not user.reset_token_expires_at:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    now_utc = datetime.now(timezone.utc)
+
+    expiry = user.reset_token_expires_at
+    if expiry.tzinfo is None:
+        expiry = expiry.replace(tzinfo=timezone.utc)
+
+    if expiry < now_utc:
+        raise HTTPException(status_code=400, detail="Invalid or expired reset token")
+
+    user.hashed_password = hash_password(payload.new_password)
+    user.reset_token = None
+    user.reset_token_expires_at = None
+    db.commit()
+
+    return {"message": "Password has been reset successfully"}

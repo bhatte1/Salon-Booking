@@ -21,4 +21,6 @@ class Appointment(Base):
     start_time: Mapped[datetime] = mapped_column(DateTime(timezone=False), index=True)
     end_time: Mapped[datetime] = mapped_column(DateTime(timezone=False), index=True)
 
+    status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
+
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)

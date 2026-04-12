@@ -116,3 +116,68 @@ export async function createAppointment(token, payload) {
 
   return res.json();
 }
+
+export async function getServices() {
+  const res = await fetch(`${API_BASE}/api/services`, {
+    method: "GET",
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to fetch services");
+  }
+
+  return res.json();
+}
+
+export async function updateAppointmentStatus(token, appointmentId, status) {
+  const res = await fetch(`${API_BASE}/api/appointments/owner/${appointmentId}/status`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ status }),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to update appointment status");
+  }
+
+  return res.json();
+}
+
+export async function forgotPassword(payload) {
+  const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Forgot password failed");
+  }
+
+  return res.json();
+}
+
+export async function resetPassword(payload) {
+  const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Reset password failed");
+  }
+
+  return res.json();
+}

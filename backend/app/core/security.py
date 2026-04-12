@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import secrets
 from jose import jwt
 from passlib.context import CryptContext
 from app.core.config import settings
@@ -25,3 +26,11 @@ def create_access_token(data: dict) -> str:
 
 def decode_access_token(token: str) -> dict:
     return jwt.decode(token, settings.secret_key, algorithms=[settings.algorithm])
+
+
+def generate_reset_token() -> str:
+    return secrets.token_urlsafe(32)
+
+
+def get_reset_token_expiry() -> datetime:
+    return datetime.now(timezone.utc) + timedelta(hours=1)

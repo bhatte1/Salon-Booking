@@ -8,6 +8,7 @@ import ForgotUsernamePage from "./pages/ForgotUsernamePage";
 import CustomerDashboardPage from "./pages/CustomerDashboardPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 import "./App.css";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/login/owner" element={<OwnerLoginPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/forgot-username" element={<ForgotUsernamePage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         <Route
           path="/dashboard/customer"

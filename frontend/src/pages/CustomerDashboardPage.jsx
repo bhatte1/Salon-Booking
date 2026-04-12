@@ -1,7 +1,11 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
-import { getMyAppointments, createAppointment } from "../api/auth.js";
+import {
+  getMyAppointments,
+  createAppointment,
+  getServices,
+} from "../api/auth.js";
 
 export default function CustomerDashboardPage() {
   const { user, token, logout } = useAuth();
@@ -10,6 +14,9 @@ export default function CustomerDashboardPage() {
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState("");
+
+  const [services, setServices] = useState([]);
+  const [servicesError, setServicesError] = useState("");
 
   const [serviceId, setServiceId] = useState("");
   const [startTime, setStartTime] = useState("");
@@ -33,8 +40,18 @@ export default function CustomerDashboardPage() {
     }
   }
 
+  async function loadServices() {
+    try {
+      const data = await getServices();
+      setServices(data);
+    } catch (err) {
+      setServicesError(err.message);
+    }
+  }
+
   useEffect(() => {
     loadAppointments();
+    loadServices();
   }, [token]);
 
   async function handleBooking(e) {
@@ -79,12 +96,19 @@ export default function CustomerDashboardPage() {
       <h3>Book Appointment</h3>
 
       <form onSubmit={handleBooking} className="form">
-        <input
-          placeholder="Service ID"
+        <select
           value={serviceId}
           onChange={(e) => setServiceId(e.target.value)}
           required
-        />
+        >
+          <option value="">Select a service</option>
+          {services.map((service) => (
+            <option key={service.id} value={service.id}>
+              {service.name} (${(service.price_cents / 100).toFixed(2)}) -{" "}
+              {service.duration_minutes} min
+            </option>
+          ))}
+        </select>
 
         <input
           type="datetime-local"
@@ -104,6 +128,7 @@ export default function CustomerDashboardPage() {
 
       {bookingMessage && <p>{bookingMessage}</p>}
       {bookingError && <p className="error">{bookingError}</p>}
+      {servicesError && <p className="error">{servicesError}</p>}
 
       <hr />
 
@@ -112,22 +137,29 @@ export default function CustomerDashboardPage() {
       {loadingAppointments && <p>Loading appointments...</p>}
       {appointmentsError && <p className="error">{appointmentsError}</p>}
 
-      {!loadingAppointments && !appointmentsError && appointments.length === 0 && (
-        <p>No appointments found.</p>
-      )}
+      {!loadingAppointments &&
+        !appointmentsError &&
+        appointments.length === 0 && <p>No appointments found.</p>}
 
-      {!loadingAppointments && !appointmentsError && appointments.length > 0 && (
-        <ul>
-          {appointments.map((appt) => (
-            <li key={appt.id}>
-              <strong>Appointment #{appt.id}</strong><br />
-              Service ID: {appt.service_id}<br />
-              Start Time: {appt.start_time}<br />
-              Notes: {appt.notes || "None"}
-            </li>
-          ))}
-        </ul>
-      )}
+      {!loadingAppointments &&
+        !appointmentsError &&
+        appointments.length > 0 && (
+          <ul>
+            {appointments.map((appt) => (
+              <li key={appt.id}>
+                <strong>Appointment #{appt.id}</strong>
+                <br />
+                Service ID: {appt.service_id}
+                <br />
+                Start Time: {appt.start_time}
+                <br />
+                Notes: {appt.notes || "None"}
+                <br />
+                Status: {appt.status}
+              </li>
+            ))}
+          </ul>
+        )}
 
       <br />
       <button onClick={handleLogout}>Logout</button>

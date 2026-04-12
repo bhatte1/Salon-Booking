@@ -12,6 +12,8 @@ from app.api.deps import get_current_user
 from app.models.user import User
 from app.schemas.appointment import AppointmentCreateAuthenticated
 
+from app.schemas.appointment import AppointmentStatusUpdate
+
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
 
@@ -132,6 +134,7 @@ def create_my_appointment(
         service_id=payload.service_id,
         start_time=start_utc,
         end_time=end_utc,
+        status="pending",
         notes=payload.notes,
     )
 
@@ -167,4 +170,25 @@ def list_all_appointments_for_owner(
         .all()
     )
 
-    
+@router.patch("/owner/{appointment_id}/status", response_model=AppointmentOut)
+def update_appointment_status(
+    appointment_id: int,
+    payload: AppointmentStatusUpdate,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Only owners can update appointment status")
+
+    allowed_statuses = {"pending", "confirmed", "completed", "cancelled"}
+    if payload.status not in allowed_statuses:
+        raise HTTPException(status_code=400, detail="Invalid status")
+
+    appt = db.query(Appointment).filter(Appointment.id == appointment_id).first()
+    if not appt:
+        raise HTTPException(status_code=404, detail="Appointment not found")
+
+    appt.status = payload.status
+    db.commit()
+    db.refresh(appt)
+    return appt
