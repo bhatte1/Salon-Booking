@@ -2,9 +2,13 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 
 export default function ProtectedRoute({ allowedRole, children }) {
-  const { user, token } = useAuth();
+  const { user, loading } = useAuth();
 
-  if (!token || !user) {
+  if (loading) {
+    return <div className="page">Loading...</div>;
+  }
+
+  if (!user) {
     return <Navigate to="/" replace />;
   }
 

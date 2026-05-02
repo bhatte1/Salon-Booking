@@ -30,3 +30,14 @@ class AppointmentOut(BaseModel):
 
 class AppointmentStatusUpdate(BaseModel):
     status: str
+
+
+class AvailabilitySlotOut(BaseModel):
+    start_time: str
+    available: bool
+
+
+class AppointmentAvailabilityOut(BaseModel):
+    service_id: int
+    date: str
+    slots: list[AvailabilitySlotOut]

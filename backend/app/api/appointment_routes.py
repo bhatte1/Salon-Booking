@@ -1,12 +1,16 @@
-from datetime import datetime, timedelta, timezone
-from fastapi import APIRouter, Depends, HTTPException
+from datetime import date, datetime, time, timedelta, timezone
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
 
 from app.db.session import get_db
 from app.models.appointment import Appointment
 from app.models.service import Service
-from app.schemas.appointment import AppointmentCreate, AppointmentOut
+from app.schemas.appointment import (
+    AppointmentAvailabilityOut,
+    AppointmentCreate,
+    AppointmentOut,
+)
 
 from app.api.deps import get_current_user
 from app.models.user import User
@@ -16,9 +20,57 @@ from app.schemas.appointment import AppointmentStatusUpdate
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
+BUSINESS_OPEN_HOUR = 8
+BUSINESS_CLOSE_HOUR = 19
+SLOT_INTERVAL_MINUTES = 30
+
+
+def _validate_business_hours(start_time: datetime, end_time: datetime) -> None:
+    day_open = datetime.combine(start_time.date(), time(BUSINESS_OPEN_HOUR, 0))
+    day_close = datetime.combine(start_time.date(), time(BUSINESS_CLOSE_HOUR, 0))
+
+    if start_time < day_open or end_time > day_close:
+        raise HTTPException(
+            status_code=400,
+            detail="Appointments must be within business hours (08:00 to 19:00).",
+        )
+
+
+def _build_availability_slots(
+    *,
+    day_open: datetime,
+    day_close: datetime,
+    duration_minutes: int,
+    existing_appointments: list[Appointment],
+) -> list[dict]:
+    slots: list[dict] = []
+    current = day_open
+
+    while current + timedelta(minutes=duration_minutes) <= day_close:
+        candidate_end = current + timedelta(minutes=duration_minutes)
+        has_conflict = any(
+            appt.start_time < candidate_end and appt.end_time > current
+            for appt in existing_appointments
+        )
+        slots.append(
+            {
+                "start_time": current.strftime("%H:%M"),
+                "available": not has_conflict,
+            }
+        )
+        current += timedelta(minutes=SLOT_INTERVAL_MINUTES)
+
+    return slots
+
 
 @router.get("", response_model=list[AppointmentOut])
-def list_appointments(db: Session = Depends(get_db)):
+def list_appointments(
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if current_user.role != "owner":
+        raise HTTPException(status_code=403, detail="Only owners can view all appointments")
+
     return db.query(Appointment).order_by(Appointment.start_time.desc()).all()
 
 
@@ -50,7 +102,7 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
 
     # 4) Check overlap (basic rule: same service cannot overlap)
     end_utc = start_utc + timedelta(minutes=svc.duration_minutes)
-    window_start = start_utc - timedelta(minutes=svc.duration_minutes)
+    _validate_business_hours(start_utc, end_utc)
 
     conflict = (
         db.query(Appointment)
@@ -111,6 +163,7 @@ def create_my_appointment(
 
     # 4) Compute end time
     end_utc = start_utc + timedelta(minutes=svc.duration_minutes)
+    _validate_business_hours(start_utc, end_utc)
 
     # 5) Canonical overlap check
     conflict = (
@@ -142,6 +195,47 @@ def create_my_appointment(
     db.commit()
     db.refresh(appt)
     return appt
+
+
+@router.get("/availability", response_model=AppointmentAvailabilityOut)
+def get_service_availability(
+    service_id: int = Query(..., ge=1),
+    booking_date: date = Query(...),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    _ = current_user
+
+    svc = db.query(Service).filter(Service.id == service_id).first()
+    if not svc:
+        raise HTTPException(status_code=404, detail="Service not found")
+
+    day_open = datetime.combine(booking_date, time(BUSINESS_OPEN_HOUR, 0))
+    day_close = datetime.combine(booking_date, time(BUSINESS_CLOSE_HOUR, 0))
+
+    appointments = (
+        db.query(Appointment)
+        .filter(
+            Appointment.service_id == service_id,
+            Appointment.start_time < day_close,
+            Appointment.end_time > day_open,
+        )
+        .all()
+    )
+
+    slots = _build_availability_slots(
+        day_open=day_open,
+        day_close=day_close,
+        duration_minutes=svc.duration_minutes,
+        existing_appointments=appointments,
+    )
+
+    return {
+        "service_id": service_id,
+        "date": booking_date.isoformat(),
+        "slots": slots,
+    }
+
 
 @router.get("/me/list", response_model=list[AppointmentOut])
 def list_my_appointments(

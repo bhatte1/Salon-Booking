@@ -1,0 +1,5 @@
+.e2e-venv/
+.pytest_cache/
+backend/.venv/
+__pycache__/
+*.pyc

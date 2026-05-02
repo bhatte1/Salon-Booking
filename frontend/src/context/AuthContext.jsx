@@ -1,30 +1,23 @@
 import { createContext, useContext, useEffect, useState } from "react";
-import { getMe } from "../api/auth.js";
+import { getMe, logoutUser } from "../api/auth.js";
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem("access_token"));
+  const [token, setToken] = useState(() => sessionStorage.getItem("access_token"));
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function restoreSession() {
-      const savedToken = localStorage.getItem("access_token");
-
-      if (!savedToken) {
-        setLoading(false);
-        return;
-      }
-
+      const savedToken = sessionStorage.getItem("access_token");
       try {
-        const me = await getMe(savedToken);
+        const me = await getMe(savedToken || undefined);
         setUser(me);
-        setToken(savedToken);
+        setToken(savedToken || "cookie-session");
       } catch (error) {
         console.error("Session restore failed:", error.message);
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("current_user");
+        sessionStorage.removeItem("access_token");
         setUser(null);
         setToken(null);
       } finally {
@@ -35,16 +28,23 @@ export function AuthProvider({ children }) {
     restoreSession();
   }, []);
 
-  function login(authToken, authUser) {
-    localStorage.setItem("access_token", authToken);
-    localStorage.setItem("current_user", JSON.stringify(authUser));
-    setToken(authToken);
+  function login(_authToken, authUser) {
+    if (_authToken) {
+      sessionStorage.setItem("access_token", _authToken);
+      setToken(_authToken);
+    } else {
+      setToken("cookie-session");
+    }
     setUser(authUser);
   }
 
-  function logout() {
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("current_user");
+  async function logout() {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Logout failed:", error.message);
+    }
+    sessionStorage.removeItem("access_token");
     setToken(null);
     setUser(null);
   }

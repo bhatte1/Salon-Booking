@@ -1,8 +1,11 @@
-const API_BASE = import.meta.env.VITE_API_BASE || "http://localhost:8000";
+const defaultApiHost =
+  typeof window !== "undefined" ? window.location.hostname : "localhost";
+const API_BASE = import.meta.env.VITE_API_BASE || `http://${defaultApiHost}:8000`;
 
 export async function signupCustomer(payload) {
   const res = await fetch(`${API_BASE}/api/auth/signup/customer`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -20,6 +23,7 @@ export async function signupCustomer(payload) {
 export async function loginCustomer(payload) {
   const res = await fetch(`${API_BASE}/api/auth/login/customer`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -37,6 +41,7 @@ export async function loginCustomer(payload) {
 export async function loginOwner(payload) {
   const res = await fetch(`${API_BASE}/api/auth/login/owner`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -52,11 +57,13 @@ export async function loginOwner(payload) {
 }
 
 export async function getMe(token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/api/auth/me`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers,
   });
 
   if (!res.ok) {
@@ -68,11 +75,13 @@ export async function getMe(token) {
 }
 
 export async function getMyAppointments(token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/api/appointments/me/list`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers,
   });
 
   if (!res.ok) {
@@ -84,11 +93,13 @@ export async function getMyAppointments(token) {
 }
 
 export async function getAllAppointmentsForOwner(token) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/api/appointments/owner/all`, {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers,
   });
 
   if (!res.ok) {
@@ -100,12 +111,15 @@ export async function getAllAppointmentsForOwner(token) {
 }
 
 export async function createAppointment(token, payload) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/api/appointments/me`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -120,6 +134,7 @@ export async function createAppointment(token, payload) {
 export async function getServices() {
   const res = await fetch(`${API_BASE}/api/services`, {
     method: "GET",
+    credentials: "include",
   });
 
   if (!res.ok) {
@@ -130,13 +145,39 @@ export async function getServices() {
   return res.json();
 }
 
+export async function getServiceAvailability(serviceId, bookingDate, token) {
+  const params = new URLSearchParams({
+    service_id: String(serviceId),
+    booking_date: bookingDate,
+  });
+
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(`${API_BASE}/api/appointments/availability?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    headers,
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Failed to fetch available slots");
+  }
+
+  return res.json();
+}
+
 export async function updateAppointmentStatus(token, appointmentId, status) {
+  const headers = {
+    "Content-Type": "application/json",
+  };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
   const res = await fetch(`${API_BASE}/api/appointments/owner/${appointmentId}/status`, {
     method: "PATCH",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
+    credentials: "include",
+    headers,
     body: JSON.stringify({ status }),
   });
 
@@ -151,6 +192,7 @@ export async function updateAppointmentStatus(token, appointmentId, status) {
 export async function forgotPassword(payload) {
   const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },
@@ -165,9 +207,42 @@ export async function forgotPassword(payload) {
   return res.json();
 }
 
+export async function forgotUsername(payload) {
+  const res = await fetch(`${API_BASE}/api/auth/forgot-username`, {
+    method: "POST",
+    credentials: "include",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Forgot username failed");
+  }
+
+  return res.json();
+}
+
+export async function logoutUser() {
+  const res = await fetch(`${API_BASE}/api/auth/logout`, {
+    method: "POST",
+    credentials: "include",
+  });
+
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || "Logout failed");
+  }
+
+  return res.json();
+}
+
 export async function resetPassword(payload) {
   const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
     method: "POST",
+    credentials: "include",
     headers: {
       "Content-Type": "application/json",
     },

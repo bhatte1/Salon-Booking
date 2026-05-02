@@ -17,13 +17,8 @@ export default function OwnerDashboardPage() {
   const [statusError, setStatusError] = useState("");
 
   async function loadAppointments() {
-    if (!token) {
-      setLoadingAppointments(false);
-      return;
-    }
-
     try {
-      const data = await getAllAppointmentsForOwner(token);
+      const data = await getAllAppointmentsForOwner(token || undefined);
       setAppointments(data);
     } catch (err) {
       setAppointmentsError(err.message);
@@ -41,7 +36,7 @@ export default function OwnerDashboardPage() {
     setStatusError("");
 
     try {
-      await updateAppointmentStatus(token, appointmentId, newStatus);
+      await updateAppointmentStatus(token || undefined, appointmentId, newStatus);
       setStatusMessage(`Appointment #${appointmentId} updated to ${newStatus}`);
       await loadAppointments();
     } catch (err) {
@@ -49,8 +44,8 @@ export default function OwnerDashboardPage() {
     }
   }
 
-  function handleLogout() {
-    logout();
+  async function handleLogout() {
+    await logout();
     navigate("/");
   }
 
