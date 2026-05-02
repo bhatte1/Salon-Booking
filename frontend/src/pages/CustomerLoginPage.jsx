@@ -29,28 +29,30 @@ export default function CustomerLoginPage() {
   }
 
   return (
-    <div className="page">
-      <h2>Customer Login</h2>
+    <div className="landingPageShell">
+      <div className="page landingPage">
+        <h2>Customer Login</h2>
 
-      <form onSubmit={onSubmit} className="form">
-        <input
-          placeholder="Username or Email"
-          value={form.username_or_email}
-          onChange={(e) => setForm({ ...form, username_or_email: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Password"
-          type="password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
-        <button type="submit">Login</button>
-      </form>
+        <form onSubmit={onSubmit} className="form">
+          <input
+            placeholder="Username or Email"
+            value={form.username_or_email}
+            onChange={(e) => setForm({ ...form, username_or_email: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Password"
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+          />
+          <button type="submit">Login</button>
+        </form>
 
-      {message && <p>{message}</p>}
-      {error && <p className="error">{error}</p>}
+        {message && <p>{message}</p>}
+        {error && <p className="error">{error}</p>}
+      </div>
     </div>
   );
 }

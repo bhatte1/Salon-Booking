@@ -9,11 +9,13 @@ import CustomerDashboardPage from "./pages/CustomerDashboardPage";
 import OwnerDashboardPage from "./pages/OwnerDashboardPage";
 import ProtectedRoute from "./components/ProtectedRoute";
 import ResetPasswordPage from "./pages/ResetPasswordPage";
+import HomeIconLink from "./components/HomeIconLink";
 import "./App.css";
 
 export default function App() {
   return (
     <BrowserRouter>
+      <HomeIconLink />
       <Routes>
         <Route path="/" element={<LandingPage />} />
         <Route path="/signup" element={<SignupPage />} />

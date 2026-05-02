@@ -31,22 +31,24 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <div className="page">
-      <h2>Reset Password</h2>
+    <div className="landingPageShell">
+      <div className="page landingPage">
+        <h2>Reset Password</h2>
 
-      <form onSubmit={handleSubmit} className="form">
-        <input
-          type="password"
-          placeholder="Enter new password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
-        <button type="submit">Reset Password</button>
-      </form>
+        <form onSubmit={handleSubmit} className="form">
+          <input
+            type="password"
+            placeholder="Enter new password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+          />
+          <button type="submit">Reset Password</button>
+        </form>
 
-      {message && <p>{message}</p>}
-      {error && <p className="error">{error}</p>}
+        {message && <p>{message}</p>}
+        {error && <p className="error">{error}</p>}
+      </div>
     </div>
   );
 }

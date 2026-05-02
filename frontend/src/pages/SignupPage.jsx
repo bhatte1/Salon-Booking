@@ -31,41 +31,43 @@ export default function SignupPage() {
   }
 
   return (
-    <div className="page">
-      <h2>Customer Sign Up Page</h2>
+    <div className="landingPageShell">
+      <div className="page landingPage">
+        <h2>Customer Sign Up Page</h2>
 
-      <form onSubmit={onSubmit} className="form">
-        <input
-          placeholder="Full Name"
-          value={form.full_name}
-          onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Email"
-          type="email"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Username"
-          value={form.username}
-          onChange={(e) => setForm({ ...form, username: e.target.value })}
-          required
-        />
-        <input
-          placeholder="Password"
-          type="password"
-          value={form.password}
-          onChange={(e) => setForm({ ...form, password: e.target.value })}
-          required
-        />
-        <button type="submit">Create Account</button>
-      </form>
+        <form onSubmit={onSubmit} className="form">
+          <input
+            placeholder="Full Name"
+            value={form.full_name}
+            onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Email"
+            type="email"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Username"
+            value={form.username}
+            onChange={(e) => setForm({ ...form, username: e.target.value })}
+            required
+          />
+          <input
+            placeholder="Password"
+            type="password"
+            value={form.password}
+            onChange={(e) => setForm({ ...form, password: e.target.value })}
+            required
+          />
+          <button type="submit">Create Account</button>
+        </form>
 
-      {message && <p>{message}</p>}
-      {error && <p className="error">{error}</p>}
+        {message && <p>{message}</p>}
+        {error && <p className="error">{error}</p>}
+      </div>
     </div>
   );
 }
