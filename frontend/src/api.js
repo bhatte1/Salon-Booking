@@ -1,26 +1,58 @@
 import { buildApiUrl } from "./api/baseUrl.js";
 
-export async function apiGet(path) {
-  const res = await fetch(buildApiUrl(path));
-  if (!res.ok) throw new Error(`GET ${path} failed: ${res.status}`);
-  return res.json();
-}
+export async function apiRequest(path, options = {}) {
+  const { headers, body, ...rest } = options;
+  const requestHeaders = { ...(headers || {}) };
 
-export async function apiPost(path, body) {
-  const res = await fetch(buildApiUrl(path), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
+  const response = await fetch(buildApiUrl(path), {
+    credentials: "include",
+    headers: requestHeaders,
+    body,
+    ...rest,
   });
 
-  if (!res.ok) {
+  if (!response.ok) {
     let detail = "";
     try {
-      const data = await res.json();
-      detail = data.detail ? ` - ${data.detail}` : "";
-    } catch {}
-    throw new Error(`POST ${path} failed: ${res.status}${detail}`);
+      const data = await response.json();
+      detail = data.detail || data.message || "";
+    } catch {
+      detail = "";
+    }
+    throw new Error(detail || `${rest.method || "GET"} ${path} failed: ${response.status}`);
   }
 
-  return res.json();
+  if (response.status === 204) {
+    return null;
+  }
+
+  return response.json();
+}
+
+export async function apiGet(path, options = {}) {
+  return apiRequest(path, { ...options, method: "GET" });
+}
+
+export async function apiPost(path, payload, options = {}) {
+  return apiRequest(path, {
+    ...options,
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function apiPatch(path, payload, options = {}) {
+  return apiRequest(path, {
+    ...options,
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+    body: JSON.stringify(payload),
+  });
 }
