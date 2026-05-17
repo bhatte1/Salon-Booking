@@ -43,7 +43,7 @@ security/   HTML pentest and retest reports
 
 The backend reads configuration from `backend/.env`.
 
-Minimum variables expected by the backend:
+For local development, a minimal backend `.env` looks like:
 
 ```env
 DATABASE_URL=postgresql://salon:salonpass@127.0.0.1:5433/salon_db
@@ -55,13 +55,18 @@ COOKIE_SAMESITE=lax
 CORS_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
-The frontend can optionally use:
+For deployment templates, see:
+
+- [backend/.env.example](backend/.env.example)
+- [frontend/.env.example](frontend/.env.example)
+
+The frontend can use:
 
 ```env
-VITE_API_BASE=http://localhost:8000
+VITE_API_BASE_URL=http://localhost:8000
 ```
 
-If `VITE_API_BASE` is not set, the frontend defaults to `http://<current-host>:8000`.
+If `VITE_API_BASE_URL` is not set, local development can still work through the Vite dev proxy.
 
 ## Local Setup
 
@@ -75,18 +80,7 @@ This starts PostgreSQL on `127.0.0.1:5433`.
 
 ### 2. Set up the backend
 
-There is currently no committed backend `requirements.txt` or `pyproject.toml`, so backend dependencies must be installed from your local environment or captured into a dependency file.
-
-Core packages used by the backend include:
-
-- `fastapi`
-- `uvicorn`
-- `sqlalchemy`
-- `alembic`
-- `pydantic-settings`
-- `passlib`
-- `python-jose`
-- `psycopg` or `psycopg2`
+The backend now includes a committed [backend/requirements.txt](backend/requirements.txt) for local installs and Docker builds.
 
 Typical local flow:
 
@@ -94,6 +88,7 @@ Typical local flow:
 cd backend
 python3 -m venv .venv
 source .venv/bin/activate
+pip install -r requirements.txt
 ```
 
 Run migrations:
@@ -109,6 +104,12 @@ uvicorn app.main:app --reload
 ```
 
 The API runs at `http://127.0.0.1:8000`.
+
+Health check:
+
+```bash
+curl http://127.0.0.1:8000/health
+```
 
 ### 3. Set up the frontend
 
@@ -156,19 +157,29 @@ Main route groups:
 - `GET /api/appointments/me/list`
 - `GET /api/appointments/owner/all`
 
+## Deployment
+
+Deployment instructions are documented in [DEPLOYMENT.md](DEPLOYMENT.md).
+
+That guide covers:
+
+- React frontend deployment to AWS Amplify from GitHub
+- FastAPI backend deployment to AWS EC2 using Docker
+- PostgreSQL deployment to AWS RDS
+- Alembic migrations for cloud PostgreSQL
+
 ## Notes
 
 - Customer booking currently creates an appointment for one active service at a time.
 - The customer dashboard UI supports multi-select service selection, but booking still uses the currently active selected service.
 - `security/` contains generated pentest reports.
-- This repo currently includes generated files such as virtualenv contents and `__pycache__` artifacts in git history.
+- The repo now ignores local env files, virtualenvs, frontend build output, `node_modules`, and Python cache artifacts.
 
-## Recommended README Improvements
+## Recommended Next Improvements
 
 If this project continues, the next documentation improvements should be:
 
-1. Add a committed backend dependency manifest such as `requirements.txt` or `pyproject.toml`.
-2. Add seed-data instructions for owner and service creation.
-3. Document the expected local `.env` values more formally.
-4. Add screenshots or short GIFs of the main booking flows.
-5. Add deployment instructions for frontend, backend, and database.
+1. Add seed-data instructions for owner and service creation.
+2. Add screenshots or short GIFs of the main booking flows.
+3. Add CI checks for frontend build, backend imports, and migrations.
+4. Add a production reverse-proxy example for EC2 deployment.
