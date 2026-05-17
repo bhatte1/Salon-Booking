@@ -1,11 +1,11 @@
 import { buildApiUrl } from "./api/baseUrl.js";
 
 export async function apiRequest(path, options = {}) {
-  const { headers, body, ...rest } = options;
+  const { headers, body, credentials = "omit", ...rest } = options;
   const requestHeaders = { ...(headers || {}) };
 
   const response = await fetch(buildApiUrl(path), {
-    credentials: "include",
+    credentials,
     headers: requestHeaders,
     body,
     ...rest,

@@ -21,6 +21,10 @@ class Settings(BaseSettings):
         default=["http://localhost:5173", "http://127.0.0.1:5173"],
         alias="CORS_ORIGINS",
     )
+    cors_origin_regex: str | None = Field(
+        default=r"https://.*\.amplifyapp\.com",
+        alias="CORS_ORIGIN_REGEX",
+    )
 
     @field_validator("cors_origins", mode="before")
     @classmethod
@@ -33,6 +37,14 @@ class Settings(BaseSettings):
                 parsed = json.loads(stripped)
                 return [origin.strip() for origin in parsed if origin.strip()]
             return [origin.strip() for origin in stripped.split(",") if origin.strip()]
+        return value
+
+    @field_validator("cors_origin_regex", mode="before")
+    @classmethod
+    def parse_cors_origin_regex(cls, value):
+        if isinstance(value, str):
+            stripped = value.strip()
+            return stripped or None
         return value
 
 
