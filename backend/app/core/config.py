@@ -1,3 +1,5 @@
+import json
+
 from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -24,7 +26,13 @@ class Settings(BaseSettings):
     @classmethod
     def parse_cors_origins(cls, value):
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            stripped = value.strip()
+            if not stripped:
+                return []
+            if stripped.startswith("["):
+                parsed = json.loads(stripped)
+                return [origin.strip() for origin in parsed if origin.strip()]
+            return [origin.strip() for origin in stripped.split(",") if origin.strip()]
         return value
 
 

@@ -1,9 +1,7 @@
-const defaultApiHost =
-  typeof window !== "undefined" ? window.location.hostname : "localhost";
-const API_BASE = import.meta.env.VITE_API_BASE || `http://${defaultApiHost}:8000`;
+import { buildApiUrl } from "./baseUrl.js";
 
 export async function signupCustomer(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/signup/customer`, {
+  const res = await fetch(buildApiUrl("/api/auth/signup/customer"), {
     method: "POST",
     credentials: "include",
     headers: {
@@ -21,7 +19,7 @@ export async function signupCustomer(payload) {
 }
 
 export async function loginCustomer(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/login/customer`, {
+  const res = await fetch(buildApiUrl("/api/auth/login/customer"), {
     method: "POST",
     credentials: "include",
     headers: {
@@ -39,7 +37,7 @@ export async function loginCustomer(payload) {
 }
 
 export async function loginOwner(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/login/owner`, {
+  const res = await fetch(buildApiUrl("/api/auth/login/owner"), {
     method: "POST",
     credentials: "include",
     headers: {
@@ -60,7 +58,7 @@ export async function getMe(token) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/auth/me`, {
+  const res = await fetch(buildApiUrl("/api/auth/me"), {
     method: "GET",
     credentials: "include",
     headers,
@@ -78,7 +76,7 @@ export async function getMyAppointments(token) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/appointments/me/list`, {
+  const res = await fetch(buildApiUrl("/api/appointments/me/list"), {
     method: "GET",
     credentials: "include",
     headers,
@@ -96,7 +94,7 @@ export async function getAllAppointmentsForOwner(token) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/appointments/owner/all`, {
+  const res = await fetch(buildApiUrl("/api/appointments/owner/all"), {
     method: "GET",
     credentials: "include",
     headers,
@@ -116,7 +114,7 @@ export async function createAppointment(token, payload) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/appointments/me`, {
+  const res = await fetch(buildApiUrl("/api/appointments/me"), {
     method: "POST",
     credentials: "include",
     headers,
@@ -132,7 +130,7 @@ export async function createAppointment(token, payload) {
 }
 
 export async function getServices() {
-  const res = await fetch(`${API_BASE}/api/services`, {
+  const res = await fetch(buildApiUrl("/api/services"), {
     method: "GET",
     credentials: "include",
   });
@@ -154,11 +152,14 @@ export async function getServiceAvailability(serviceId, bookingDate, token) {
   const headers = {};
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/appointments/availability?${params.toString()}`, {
-    method: "GET",
-    credentials: "include",
-    headers,
-  });
+  const res = await fetch(
+    buildApiUrl(`/api/appointments/availability?${params.toString()}`),
+    {
+      method: "GET",
+      credentials: "include",
+      headers,
+    }
+  );
 
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
@@ -174,7 +175,7 @@ export async function updateAppointmentStatus(token, appointmentId, status) {
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_BASE}/api/appointments/owner/${appointmentId}/status`, {
+  const res = await fetch(buildApiUrl(`/api/appointments/owner/${appointmentId}/status`), {
     method: "PATCH",
     credentials: "include",
     headers,
@@ -190,7 +191,7 @@ export async function updateAppointmentStatus(token, appointmentId, status) {
 }
 
 export async function forgotPassword(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/forgot-password`, {
+  const res = await fetch(buildApiUrl("/api/auth/forgot-password"), {
     method: "POST",
     credentials: "include",
     headers: {
@@ -208,7 +209,7 @@ export async function forgotPassword(payload) {
 }
 
 export async function forgotUsername(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/forgot-username`, {
+  const res = await fetch(buildApiUrl("/api/auth/forgot-username"), {
     method: "POST",
     credentials: "include",
     headers: {
@@ -226,7 +227,7 @@ export async function forgotUsername(payload) {
 }
 
 export async function logoutUser() {
-  const res = await fetch(`${API_BASE}/api/auth/logout`, {
+  const res = await fetch(buildApiUrl("/api/auth/logout"), {
     method: "POST",
     credentials: "include",
   });
@@ -240,7 +241,7 @@ export async function logoutUser() {
 }
 
 export async function resetPassword(payload) {
-  const res = await fetch(`${API_BASE}/api/auth/reset-password`, {
+  const res = await fetch(buildApiUrl("/api/auth/reset-password"), {
     method: "POST",
     credentials: "include",
     headers: {
