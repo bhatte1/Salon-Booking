@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import requests
+import pytest
 
 from e2e.utils import (
     TEST_OWNER_PASSWORD,
@@ -15,6 +16,8 @@ from e2e.utils import (
     signup_customer,
     unique_marker,
 )
+
+pytestmark = pytest.mark.requires_db
 
 
 def test_api_create_and_overlap_conflict():

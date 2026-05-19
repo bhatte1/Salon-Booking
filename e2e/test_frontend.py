@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import psycopg
 import requests
+import pytest
 from playwright.sync_api import expect
 
 from e2e.utils import (
@@ -17,6 +18,8 @@ from e2e.utils import (
     signup_customer,
     unique_marker,
 )
+
+pytestmark = pytest.mark.requires_db
 
 
 def test_frontend_customer_signup_login_and_booking_persists_to_db(page):

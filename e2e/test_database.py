@@ -4,6 +4,7 @@ from datetime import datetime
 
 import psycopg
 import requests
+import pytest
 
 from e2e.utils import (
     TEST_OWNER_PASSWORD,
@@ -18,6 +19,8 @@ from e2e.utils import (
     signup_customer,
     unique_marker,
 )
+
+pytestmark = pytest.mark.requires_db
 
 
 def test_database_end_time_duration_matches_service_minutes():
