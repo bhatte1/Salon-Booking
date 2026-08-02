@@ -27,6 +27,7 @@ def test_book_appointment(
     assert booking_response.status_code == 200
     body = booking_response.json()
     assert body["service_id"] == service["id"]
+    assert body["service_name"] == service_payload["name"]
     assert body["customer_email"] == authenticated_customer["email"]
     assert body["customer_name"] == authenticated_customer["full_name"]
     assert body["status"] == "pending"
@@ -68,6 +69,7 @@ def test_get_my_appointments(
     matched_appointment = next(item for item in appointments if item["id"] == appointment["id"])
     assert matched_appointment["customer_email"] == authenticated_customer["email"]
     assert matched_appointment["service_id"] == service["id"]
+    assert matched_appointment["service_name"] == service_payload["name"]
     assert matched_appointment["status"] == "pending"
 
 

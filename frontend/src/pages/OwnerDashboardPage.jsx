@@ -81,7 +81,7 @@ export default function OwnerDashboardPage() {
               <br />
               Email: {appt.customer_email}
               <br />
-              Service ID: {appt.service_id}
+              Service: {appt.service_name || "Unavailable service"}
               <br />
               Start Time: {appt.start_time}
               <br />

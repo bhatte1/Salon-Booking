@@ -465,7 +465,7 @@ export default function CustomerDashboardPage() {
                   <li key={appt.id} className="appointmentCard">
                     <strong>Appointment #{appt.id}</strong>
                     <br />
-                    Service ID: {appt.service_id}
+                    Service: {appt.service_name || "Unavailable service"}
                     <br />
                     Start Time: {appt.start_time}
                     <br />
