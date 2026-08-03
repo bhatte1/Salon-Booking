@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import psycopg
 import requests
+import pytest
 from playwright.sync_api import expect
 
 from e2e.utils import (
@@ -17,9 +18,13 @@ from e2e.utils import (
     signup_customer,
     unique_marker,
 )
+from utils.self_healing import SelfHealingLocator
+
+pytestmark = pytest.mark.requires_db
 
 
 def test_frontend_customer_signup_login_and_booking_persists_to_db(page):
+    healer = SelfHealingLocator()
     marker = unique_marker("ui-customer")
     service_name = f"UI Customer Service {marker}"
     full_name = f"UI Customer {marker}"
@@ -34,21 +39,57 @@ def test_frontend_customer_signup_login_and_booking_persists_to_db(page):
         page.goto(frontend_url())
 
         expect(page.get_by_role("heading", name="Salon Booking")).to_be_visible()
-        page.get_by_role("button", name="Customer Sign Up").click()
+        healer.find_with_healing(
+            page,
+            'button:has-text("Customer Sign Up")',
+            element_name="Customer Sign Up Button",
+        ).click()
 
         expect(page.get_by_role("heading", name="Customer Sign Up Page")).to_be_visible()
-        page.get_by_placeholder("Full Name").fill(full_name)
-        page.get_by_placeholder("Email").fill(email)
-        page.get_by_placeholder("Username").fill(username)
-        page.get_by_placeholder("Password").fill(password)
-        page.get_by_role("button", name="Create Account").click()
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Full Name"]',
+            element_name="Full Name Input",
+        ).fill(full_name)
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Email"]',
+            element_name="Email Input",
+        ).fill(email)
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Username"]',
+            element_name="Username Input",
+        ).fill(username)
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Password"]',
+            element_name="Password Input",
+        ).fill(password)
+        healer.find_with_healing(
+            page,
+            'button:has-text("Create Account")',
+            element_name="Create Account Button",
+        ).click()
 
         expect(page.get_by_text(f"Signup successful for {username}")).to_be_visible()
 
         page.goto(f"{frontend_url()}/login/customer")
-        page.get_by_placeholder("Username or Email").fill(username)
-        page.get_by_placeholder("Password").fill(password)
-        page.get_by_role("button", name="Login").click()
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Username or Email"]',
+            element_name="Username Or Email Input",
+        ).fill(username)
+        healer.find_with_healing(
+            page,
+            'input[placeholder="Password"]',
+            element_name="Customer Login Password Input",
+        ).fill(password)
+        healer.find_with_healing(
+            page,
+            'button:has-text("Login")',
+            element_name="Customer Login Button",
+        ).click()
 
         expect(page).to_have_url(f"{frontend_url()}/dashboard/customer")
         expect(page.get_by_role("heading", name="Customer Dashboard")).to_be_visible()

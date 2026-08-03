@@ -5,6 +5,7 @@ fastapi==0.131.0
 passlib==1.7.4
 psycopg==3.3.3
 psycopg-binary==3.3.3
+psycopg2-binary==2.9.10
 pydantic-settings==2.13.1
 python-dotenv==1.2.1
 python-jose==3.5.0

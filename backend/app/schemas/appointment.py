@@ -21,6 +21,7 @@ class AppointmentOut(BaseModel):
     customer_name: str
     customer_email: EmailStr
     service_id: int
+    service_name: str | None = None
     start_time: datetime
     notes: str | None = None
     status: str

@@ -24,3 +24,8 @@ class Appointment(Base):
     status: Mapped[str] = mapped_column(String(20), default="pending", index=True)
 
     notes: Mapped[str | None] = mapped_column(String(500), nullable=True)
+
+    @property
+    def service_name(self) -> str | None:
+        """Expose the related service's customer-facing name in API responses."""
+        return self.service.name if self.service else None

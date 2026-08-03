@@ -1,20 +1,64 @@
 from __future__ import annotations
 
+import logging
 import os
 import random
 import time
 from datetime import datetime, timedelta
 
-import psycopg
 import requests
+
+LOGGER = logging.getLogger(__name__)
+
+
+LOCAL_TEST_ENV = "local"
+AWS_TEST_ENV = "aws"
+
+
+def test_env() -> str:
+    return os.getenv("TEST_ENV", LOCAL_TEST_ENV).strip().lower()
+
+
+def is_local_env() -> bool:
+    return test_env() == LOCAL_TEST_ENV
+
+
+def is_aws_env() -> bool:
+    return test_env() == AWS_TEST_ENV
+
+
+def database_access_enabled() -> bool:
+    if is_local_env():
+        return True
+    return bool(os.getenv("E2E_DATABASE_URL") or os.getenv("DATABASE_URL"))
+
+
+def require_database_access() -> None:
+    if database_access_enabled():
+        return
+    raise RuntimeError(
+        "Database access is not configured for this test run. "
+        "Set E2E_DATABASE_URL (or DATABASE_URL) to enable DB-backed cleanup and validation."
+    )
 
 
 def frontend_url() -> str:
-    return os.getenv("E2E_FRONTEND_URL", "http://localhost:5173")
+    default = "http://127.0.0.1:5173" if is_local_env() else ""
+    return os.getenv("E2E_FRONTEND_URL", default).rstrip("/")
 
 
 def api_url() -> str:
-    return os.getenv("E2E_API_URL", "http://127.0.0.1:8000")
+    default = "http://127.0.0.1:8000" if is_local_env() else ""
+    return os.getenv("E2E_API_URL", default).rstrip("/")
+
+
+def current_environment_summary() -> dict[str, str | bool]:
+    return {
+        "test_env": test_env(),
+        "frontend_url": frontend_url(),
+        "api_url": api_url(),
+        "database_access_enabled": database_access_enabled(),
+    }
 
 
 def _normalize_db_url(raw: str | None) -> str:
@@ -24,6 +68,7 @@ def _normalize_db_url(raw: str | None) -> str:
 
 
 def db_url() -> str:
+    require_database_access()
     return _normalize_db_url(
         os.getenv("E2E_DATABASE_URL") or os.getenv("DATABASE_URL")
     )
@@ -55,6 +100,9 @@ def business_date_local(days_from_now: int = 1) -> str:
 
 
 def cleanup_by_email_and_service(*, email: str | None = None, service_name: str | None = None) -> None:
+    require_database_access()
+    import psycopg
+
     with psycopg.connect(db_url()) as conn:
         with conn.cursor() as cur:
             if email:
@@ -131,6 +179,9 @@ def login_owner(*, username_or_email: str, password: str) -> dict:
 
 
 def create_owner_user(*, full_name: str, email: str, username: str) -> None:
+    require_database_access()
+    import psycopg
+
     with psycopg.connect(db_url()) as conn:
         with conn.cursor() as cur:
             cur.execute(
@@ -157,6 +208,9 @@ def cleanup_test_data(
     usernames: list[str] | None = None,
     service_names: list[str] | None = None,
 ) -> None:
+    require_database_access()
+    import psycopg
+
     emails = emails or []
     usernames = usernames or []
     service_names = service_names or []
