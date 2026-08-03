@@ -290,6 +290,13 @@ export default function CustomerDashboardPage() {
               </div>
             )}
 
+            {!servicesError && services.length === 0 && (
+              <p className="emptyStateMessage">
+                No services are available yet. The app needs at least one salon service before a
+                customer can book an appointment.
+              </p>
+            )}
+
             <form onSubmit={handleBooking} className="form">
               <div className="dateQuickActions">
                 <button
