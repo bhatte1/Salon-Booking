@@ -35,6 +35,7 @@ export default function CustomerDashboardPage() {
   const navigate = useNavigate();
   const bookingMonthInputRef = useRef(null);
   const bookingDateInputRef = useRef(null);
+  const availabilityRequestIdRef = useRef(0);
 
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
@@ -163,9 +164,12 @@ export default function CustomerDashboardPage() {
 
   useEffect(() => {
     async function loadAvailability() {
+      const requestId = ++availabilityRequestIdRef.current;
+
       if (!activeServiceId || !bookingDate) {
         setAvailabilitySlots([]);
         setSelectedSlot("");
+        setSlotsLoading(false);
         return;
       }
 
@@ -178,14 +182,20 @@ export default function CustomerDashboardPage() {
           bookingDate,
           token || undefined
         );
+        if (requestId !== availabilityRequestIdRef.current) return;
+
         setAvailabilitySlots(data.slots || []);
         setSelectedSlot("");
       } catch (err) {
+        if (requestId !== availabilityRequestIdRef.current) return;
+
         setSlotsError(err.message);
         setAvailabilitySlots([]);
         setSelectedSlot("");
       } finally {
-        setSlotsLoading(false);
+        if (requestId === availabilityRequestIdRef.current) {
+          setSlotsLoading(false);
+        }
       }
     }
 
