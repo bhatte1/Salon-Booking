@@ -60,6 +60,14 @@ export default function CustomerDashboardPage() {
     selectedServiceIds.includes(String(service.id))
   );
 
+  function getAppointmentServiceName(appointment) {
+    return (
+      appointment.service_name ||
+      services.find((service) => service.id === appointment.service_id)?.name ||
+      "Unavailable service"
+    );
+  }
+
   function formatSlotLabel(slot) {
     const [hourText, minuteText] = slot.split(":");
     const hour = Number(hourText);
@@ -482,7 +490,7 @@ export default function CustomerDashboardPage() {
                   <li key={appt.id} className="appointmentCard">
                     <strong>Appointment #{appt.id}</strong>
                     <br />
-                    Service: {appt.service_name || "Unavailable service"}
+                    Service: {getAppointmentServiceName(appt)}
                     <br />
                     Start Time: {appt.start_time}
                     <br />
