@@ -1,6 +1,7 @@
-import { useEffect, useRef, useState } from "react";
+import AppointmentList from "../components/AppointmentList.jsx";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/auth-context.js";
 import {
   getMyAppointments,
   createAppointment,
@@ -40,6 +41,8 @@ export default function CustomerDashboardPage() {
   const [appointments, setAppointments] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(true);
   const [appointmentsError, setAppointmentsError] = useState("");
+
+
 
   const [services, setServices] = useState([]);
   const [servicesError, setServicesError] = useState("");
@@ -145,7 +148,7 @@ export default function CustomerDashboardPage() {
     }
   }
 
-  async function loadAppointments() {
+  const loadAppointments = useCallback(async () => {
     try {
       const data = await getMyAppointments(token || undefined);
       setAppointments(data);
@@ -154,7 +157,7 @@ export default function CustomerDashboardPage() {
     } finally {
       setLoadingAppointments(false);
     }
-  }
+  }, [token]);
 
   async function loadServices() {
     try {
@@ -168,7 +171,7 @@ export default function CustomerDashboardPage() {
   useEffect(() => {
     loadAppointments();
     loadServices();
-  }, [token]);
+  }, [loadAppointments]);
 
   useEffect(() => {
     async function loadAvailability() {
@@ -485,7 +488,7 @@ export default function CustomerDashboardPage() {
             )}
 
             {!loadingAppointments && !appointmentsError && appointments.length > 0 && (
-              <ul className="appointmentsList">
+              <AppointmentList label="My appointments">
                 {appointments.map((appt) => (
                   <li key={appt.id} className="appointmentCard">
                     <strong>Appointment #{appt.id}</strong>
@@ -499,7 +502,7 @@ export default function CustomerDashboardPage() {
                     Status: {appt.status}
                   </li>
                 ))}
-              </ul>
+              </AppointmentList>
             )}
           </section>
         </div>

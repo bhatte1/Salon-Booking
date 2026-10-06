@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import AppointmentList from "../components/AppointmentList.jsx";
+import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth } from "../context/auth-context.js";
 import {
   getAllAppointmentsForOwner,
   updateAppointmentStatus,
@@ -16,7 +17,7 @@ export default function OwnerDashboardPage() {
   const [statusMessage, setStatusMessage] = useState("");
   const [statusError, setStatusError] = useState("");
 
-  async function loadAppointments() {
+  const loadAppointments = useCallback(async () => {
     try {
       const data = await getAllAppointmentsForOwner(token || undefined);
       setAppointments(data);
@@ -25,11 +26,11 @@ export default function OwnerDashboardPage() {
     } finally {
       setLoadingAppointments(false);
     }
-  }
+  }, [token]);
 
   useEffect(() => {
     loadAppointments();
-  }, [token]);
+  }, [loadAppointments]);
 
   async function handleStatusUpdate(appointmentId, newStatus) {
     setStatusMessage("");
@@ -51,7 +52,12 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="page">
-      <h2>Owner Dashboard</h2>
+      <div className="ownerDashboardHeader">
+        <h2>Owner Dashboard</h2>
+        <button type="button" className="customerLogoutBtn" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
       <p>Welcome, {user?.full_name}</p>
       <p>Email: {user?.email}</p>
       <p>Username: {user?.username}</p>
@@ -72,9 +78,9 @@ export default function OwnerDashboardPage() {
       )}
 
       {!loadingAppointments && !appointmentsError && appointments.length > 0 && (
-        <ul>
+        <AppointmentList label="All appointments">
           {appointments.map((appt) => (
-            <li key={appt.id} style={{ marginBottom: "16px" }}>
+            <li key={appt.id} className="appointmentCard">
               <strong>Appointment #{appt.id}</strong>
               <br />
               Customer: {appt.customer_name}
@@ -102,11 +108,9 @@ export default function OwnerDashboardPage() {
               </div>
             </li>
           ))}
-        </ul>
+        </AppointmentList>
       )}
 
-      <br />
-      <button onClick={handleLogout}>Logout</button>
     </div>
   );
 }

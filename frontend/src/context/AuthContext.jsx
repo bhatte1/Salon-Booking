@@ -1,12 +1,36 @@
-import { createContext, useContext, useState } from "react";
-import { logoutUser } from "../api/auth.js";
+import { useEffect, useState } from "react";
+import { getMe, logoutUser } from "../api/auth.js";
 
-const AuthContext = createContext(null);
+import { AuthContext } from "./auth-context.js";
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(() => sessionStorage.getItem("access_token"));
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(() => !!sessionStorage.getItem("access_token"));
+
+  useEffect(() => {
+    const savedToken = sessionStorage.getItem("access_token");
+    if (!savedToken) return;
+    let cancelled = false;
+
+    async function restoreSession() {
+      try {
+        const authUser = await getMe(savedToken);
+        if (!cancelled) setUser(authUser);
+      } catch {
+        if (!cancelled) {
+          sessionStorage.removeItem("access_token");
+          setToken(null);
+          setUser(null);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
+
+    restoreSession();
+    return () => { cancelled = true; };
+  }, []);
 
   function login(_authToken, authUser) {
     if (_authToken) {
@@ -43,8 +67,4 @@ export function AuthProvider({ children }) {
       {children}
     </AuthContext.Provider>
   );
-}
-
-export function useAuth() {
-  return useContext(AuthContext);
 }
