@@ -15,11 +15,15 @@ export async function apiRequest(path, options = {}) {
     let detail = "";
     try {
       const data = await response.json();
-      detail = data.detail || data.message || "";
+      detail = typeof data.detail === "string"
+        ? data.detail
+        : data.detail?.message || data.message || "";
     } catch {
       detail = "";
     }
-    throw new Error(detail || `${rest.method || "GET"} ${path} failed: ${response.status}`);
+    const error = new Error(detail || `${rest.method || "GET"} ${path} failed: ${response.status}`);
+    error.status = response.status;
+    throw error;
   }
 
   if (response.status === 204) {

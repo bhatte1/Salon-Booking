@@ -11,6 +11,11 @@ class Settings(BaseSettings):
         extra="ignore",
     )
 
+    salon_timezone: str | None = Field(default=None, alias="SALON_TIMEZONE")
+
+    bedrock_model_id: str | None = Field(default=None, alias="BEDROCK_MODEL_ID")
+    aws_region: str | None = Field(default=None, alias="AWS_REGION")
+
     database_url: str = Field(alias="DATABASE_URL")
     secret_key: str = Field(alias="SECRET_KEY")
     algorithm: str = Field(default="HS256", alias="ALGORITHM")

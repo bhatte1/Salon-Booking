@@ -1,3 +1,4 @@
+import { formatAppointmentTime } from "../utils/appointmentTime.js";
 import AppointmentList from "../components/AppointmentList.jsx";
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -89,11 +90,14 @@ export default function OwnerDashboardPage() {
               <br />
               Service: {appt.service_name || "Unavailable service"}
               <br />
-              Start Time: {appt.start_time}
+              Start Time: {formatAppointmentTime(appt.start_time, appt.salon_timezone)}
               <br />
               Notes: {appt.notes || "None"}
               <br />
               Status: <strong>{appt.status}</strong>
+                    {appt.status === "pending" && (
+                      <p className="appointmentStatusHelp">Appointment created — awaiting salon confirmation. This is not an unconfirmed chat request.</p>
+                    )}
               <br />
               <div style={{ marginTop: "8px", display: "flex", gap: "8px", flexWrap: "wrap" }}>
                 <button onClick={() => handleStatusUpdate(appt.id, "confirmed")}>

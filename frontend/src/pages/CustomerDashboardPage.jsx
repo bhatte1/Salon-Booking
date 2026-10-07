@@ -1,3 +1,6 @@
+import { useBookingPolicy } from "../hooks/useBookingPolicy.js";
+import { formatAppointmentTime, salonDateOffset } from "../utils/appointmentTime.js";
+import { Link } from "react-router-dom";
 import AppointmentList from "../components/AppointmentList.jsx";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +37,7 @@ function getServiceImage(serviceName) {
 export default function CustomerDashboardPage() {
   const { user, token, logout } = useAuth();
   const navigate = useNavigate();
+  const { policy, policyError } = useBookingPolicy();
   const bookingMonthInputRef = useRef(null);
   const bookingDateInputRef = useRef(null);
   const availabilityRequestIdRef = useRef(0);
@@ -48,7 +52,7 @@ export default function CustomerDashboardPage() {
   const [servicesError, setServicesError] = useState("");
 
   const [selectedServiceIds, setSelectedServiceIds] = useState([]);
-  const [bookingDate, setBookingDate] = useState(() => getTomorrowDate());
+  const [bookingDate, setBookingDate] = useState("");
   const [selectedSlot, setSelectedSlot] = useState("");
   const [availabilitySlots, setAvailabilitySlots] = useState([]);
   const [slotsLoading, setSlotsLoading] = useState(false);
@@ -88,14 +92,16 @@ export default function CustomerDashboardPage() {
   }
 
   function offsetLocalDate(daysOffset) {
-    const dt = new Date();
-    dt.setHours(0, 0, 0, 0);
-    dt.setDate(dt.getDate() + daysOffset);
-    const year = dt.getFullYear();
-    const month = String(dt.getMonth() + 1).padStart(2, "0");
-    const day = String(dt.getDate()).padStart(2, "0");
-    return `${year}-${month}-${day}`;
+    return policy ? salonDateOffset(policy.timezone, daysOffset) : "";
   }
+
+  useEffect(() => {
+    if (!policy) return;
+    async function initializeDate() {
+      setBookingDate(current => current || salonDateOffset(policy.timezone, 1));
+    }
+    initializeDate();
+  }, [policy]);
 
   function shiftBookingDate(daysDelta) {
     if (!bookingDate) return;
@@ -229,7 +235,9 @@ export default function CustomerDashboardPage() {
     }
 
     try {
-      const startTime = `${bookingDate}T${selectedSlot}:00`;
+      const slot = availabilitySlots.find(item => item.start_time === selectedSlot && item.available);
+      if (!slot?.start_utc) throw new Error("Please refresh availability and select a time again.");
+      const startTime = slot.start_utc;
       await createAppointment(token || undefined, {
         service_id: Number(activeServiceId),
         start_time: startTime,
@@ -276,11 +284,13 @@ export default function CustomerDashboardPage() {
           </button>
         </div>
 
+        <p><Link className="chatBookingLink" to="/chat">Ask the salon assistant</Link></p>
+
         <div className="dashboardGrid">
           <section className="dashboardPanel">
             <h3 className="dashboardSectionTitle">Book Appointment</h3>
             <p className="sectionLead">
-              Choose your service, then pick an available slot between 8:00 AM and 7:00 PM.
+              {policy ? `Booking hours: ${policy.opening_time}–${policy.closing_time} (${policy.timezone}). Your service must finish by closing.` : policyError || "Loading booking hours…"}
             </p>
 
             {services.length > 0 && (
@@ -478,7 +488,7 @@ export default function CustomerDashboardPage() {
           </section>
 
           <section className="dashboardPanel">
-            <h3 className="dashboardSectionTitle">My Appointments</h3>
+            <h3 id="my-appointments" className="dashboardSectionTitle">My Appointments</h3>
 
             {loadingAppointments && <p>Loading appointments...</p>}
             {appointmentsError && <p className="error">{appointmentsError}</p>}
@@ -495,11 +505,14 @@ export default function CustomerDashboardPage() {
                     <br />
                     Service: {getAppointmentServiceName(appt)}
                     <br />
-                    Start Time: {appt.start_time}
+                    Start Time: {formatAppointmentTime(appt.start_time, appt.salon_timezone)}
                     <br />
                     Notes: {appt.notes || "None"}
                     <br />
                     Status: {appt.status}
+                    {appt.status === "pending" && (
+                      <p className="appointmentStatusHelp">Appointment created — awaiting salon confirmation. This is not an unconfirmed chat request.</p>
+                    )}
                   </li>
                 ))}
               </AppointmentList>

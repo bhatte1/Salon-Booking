@@ -1,3 +1,4 @@
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -8,6 +9,8 @@ from app.core.config import settings
 from app.db.session import SessionLocal
 from app.models.service import Service
 
+
+logging.basicConfig(level=logging.INFO)
 
 DEFAULT_SERVICES = [
     {"name": "Classic Haircut", "price_cents": 3500, "duration_minutes": 30},

@@ -1,3 +1,4 @@
+import CustomerChatPage from "./pages/CustomerChatPage.jsx";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LandingPage from "./pages/LandingPage";
 import SignupPage from "./pages/SignupPage";
@@ -33,6 +34,8 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route path="/chat" element={<ProtectedRoute allowedRole="customer"><CustomerChatPage /></ProtectedRoute>} />
 
         <Route
           path="/dashboard/owner"

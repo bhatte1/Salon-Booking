@@ -1,3 +1,4 @@
+from app.models.chat_conversation import ChatConversation
 from app.core.config import settings
 from app.db.base import Base
 from app.models.service import Service

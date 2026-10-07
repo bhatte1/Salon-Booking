@@ -1,4 +1,4 @@
-from datetime import date, datetime, time, timedelta, timezone
+from datetime import date, datetime, timedelta, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from sqlalchemy import text
@@ -20,20 +20,12 @@ from app.schemas.appointment import AppointmentStatusUpdate
 
 router = APIRouter(prefix="/appointments", tags=["appointments"])
 
-BUSINESS_OPEN_HOUR = 8
-BUSINESS_CLOSE_HOUR = 19
+from app.services.booking_hours import (
+    salon_zone, business_day_bounds, booking_policy,
+    validate_business_hours as _validate_business_hours,
+)
+
 SLOT_INTERVAL_MINUTES = 30
-
-
-def _validate_business_hours(start_time: datetime, end_time: datetime) -> None:
-    day_open = datetime.combine(start_time.date(), time(BUSINESS_OPEN_HOUR, 0))
-    day_close = datetime.combine(start_time.date(), time(BUSINESS_CLOSE_HOUR, 0))
-
-    if start_time < day_open or end_time > day_close:
-        raise HTTPException(
-            status_code=400,
-            detail="Appointments must be within business hours (08:00 to 19:00).",
-        )
 
 
 def _build_availability_slots(
@@ -54,8 +46,9 @@ def _build_availability_slots(
         )
         slots.append(
             {
-                "start_time": current.strftime("%H:%M"),
-                "available": not has_conflict,
+                "start_time": current.replace(tzinfo=timezone.utc).astimezone(salon_zone()).strftime("%H:%M"),
+                "start_utc": current.replace(tzinfo=timezone.utc).isoformat().replace("+00:00", "Z"),
+                "available": not has_conflict and current > datetime.now(timezone.utc).replace(tzinfo=None),
             }
         )
         current += timedelta(minutes=SLOT_INTERVAL_MINUTES)
@@ -93,11 +86,10 @@ def create_appointment(payload: AppointmentCreate, db: Session = Depends(get_db)
         raise HTTPException(status_code=400, detail="Cannot book in the past")
 
     # 3) System-design: advisory lock to prevent race condition
-    # Lock key: (service_id, minute_bucket)
-    minute_bucket = int(start_utc.timestamp() // 60)
+    # Lock key: (service_id, 0), serializing all bookings for this service.
     db.execute(
         text("SELECT pg_advisory_xact_lock(:k1, :k2)"),
-        {"k1": int(payload.service_id), "k2": minute_bucket},
+        {"k1": int(payload.service_id), "k2": 0},
     )
 
     # 4) Check overlap (basic rule: same service cannot overlap)
@@ -139,6 +131,10 @@ def create_my_appointment(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    return create_customer_appointment(payload, current_user, db)
+
+
+def create_customer_appointment(payload, current_user, db, *, commit=True):
     # 0) Normalize time to UTC naive (same as your existing logic)
     start_utc = payload.start_time
     if start_utc.tzinfo is not None:
@@ -154,11 +150,10 @@ def create_my_appointment(
     if start_utc < now_utc:
         raise HTTPException(status_code=400, detail="Cannot book in the past")
 
-    # 3) Advisory lock to reduce race conditions
-    minute_bucket = int(start_utc.timestamp() // 60)
+    # 3) Service-wide advisory lock protects overlapping start times.
     db.execute(
         text("SELECT pg_advisory_xact_lock(:k1, :k2)"),
-        {"k1": int(payload.service_id), "k2": minute_bucket},
+        {"k1": int(payload.service_id), "k2": 0},
     )
 
     # 4) Compute end time
@@ -192,9 +187,17 @@ def create_my_appointment(
     )
 
     db.add(appt)
-    db.commit()
-    db.refresh(appt)
+    if commit:
+        db.commit()
+        db.refresh(appt)
+    else:
+        db.flush()
     return appt
+
+
+@router.get("/booking-policy")
+def read_booking_policy():
+    return booking_policy()
 
 
 @router.get("/availability", response_model=AppointmentAvailabilityOut)
@@ -210,8 +213,7 @@ def get_service_availability(
     if not svc:
         raise HTTPException(status_code=404, detail="Service not found")
 
-    day_open = datetime.combine(booking_date, time(BUSINESS_OPEN_HOUR, 0))
-    day_close = datetime.combine(booking_date, time(BUSINESS_CLOSE_HOUR, 0))
+    day_open, day_close = business_day_bounds(booking_date)
 
     appointments = (
         db.query(Appointment)
@@ -234,6 +236,9 @@ def get_service_availability(
         "service_id": service_id,
         "date": booking_date.isoformat(),
         "slots": slots,
+        "timezone": str(salon_zone()),
+        "opening_time": "08:00",
+        "closing_time": "19:00",
     }
 
 
