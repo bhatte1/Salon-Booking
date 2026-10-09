@@ -567,6 +567,9 @@ select {
 
 .chatPage { max-width: 760px; margin: 0 auto; }
 .chatBookingLink { color: #5eead4; }
+.chatBackButton { display: inline-flex; gap: 6px; align-items: center; padding: 10px 14px; border: 1px solid #64748b; border-radius: 8px; color: #e2e8f0; text-decoration: none; }
+.chatBackButton:hover { background: #334155; }
+.chatBackButton:focus-visible { outline: 2px solid #5eead4; outline-offset: 3px; }
 .chatMessages { max-height: 420px; overflow-y: auto; margin: 20px 0; }
 .chatMessage { border: 1px solid #64748b; border-radius: 10px; padding: 12px; margin-bottom: 12px; }
 .chatMessage p { white-space: pre-wrap; overflow-wrap: anywhere; }

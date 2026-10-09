@@ -86,6 +86,9 @@ export default function CustomerChatPage() {
   return (
     <div className="dashboardShell">
       <section className="dashboardPanel chatPage">
+        <Link className="chatBackButton" to="/dashboard/customer">
+          <span aria-hidden="true">← </span>Back to Customer Dashboard
+        </Link>
         <h2>Salon booking assistant</h2>
         <p>Tell me what you’d like to book, for example “Book a haircut tomorrow at 11 AM”. I’ll check availability and ask you to confirm before booking.</p>
         <p>{timezone ? `Times are shown in ${timezone}. ` : ""}Questions are processed by AWS Bedrock. Avoid including personal information.</p>
